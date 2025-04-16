@@ -1,7 +1,7 @@
 const canvas = document.getElementById("gameCanvas");
 const ctx = canvas.getContext("2d");
 
-const TILE_SIZE = 20;
+const TILE_SIZE = 25;
 let grid = null;
 let player = { x: 0, y: 0 };
 

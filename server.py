@@ -5,7 +5,7 @@ import socketio
 sio = socketio.AsyncServer(async_mode='asgi', cors_allowed_origins='*')
 app = socketio.ASGIApp(sio)
 
-GRID_SIZE = 20
+GRID_SIZE = 30
 PLAYER_START = {"x": 0, "y": 0}
 players = {}
 
