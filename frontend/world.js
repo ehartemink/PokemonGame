@@ -32,6 +32,8 @@ socket.on("players_update", (data) => {
   draw();
 });
 
+const spriteCache = {};
+
 function draw() {
   if (!grid) return;
 
@@ -40,6 +42,7 @@ function draw() {
 
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 
+  // Draw tiles
   for (let y = 0; y < rows; y++) {
     for (let x = 0; x < cols; x++) {
       const tile = grid[y][x];
@@ -49,37 +52,39 @@ function draw() {
   }
 
   // Draw all players
-Object.entries(players).forEach(([sid, pos]) => {
-  const isYou = sid === socket.id;
+  Object.entries(players).forEach(([sid, pos]) => {
+    const isYou = sid === socket.id;
+    const spriteSrc = `assets/player/${pos.sprite}`;
 
-  // Load sprite image
-  const img = new Image();
-  img.src = `assets/player/${pos.sprite}`;
+    if (!spriteCache[spriteSrc]) {
+      const img = new Image();
+      img.src = spriteSrc;
+      spriteCache[spriteSrc] = img;
+    }
 
-  // When loaded, draw sprite (async-safe approach)
-  img.onload = () => {
-    ctx.drawImage(
-      img,
-      pos.x * TILE_SIZE,
-      pos.y * TILE_SIZE,
-      TILE_SIZE,
-      TILE_SIZE
+    const img = spriteCache[spriteSrc];
+
+    if (img.complete) {
+      ctx.drawImage(
+        img,
+        pos.x * TILE_SIZE,
+        pos.y * TILE_SIZE,
+        TILE_SIZE,
+        TILE_SIZE
+      );
+    }
+
+    // Draw name tag
+    ctx.fillStyle = "white";
+    ctx.font = "10px 'Press Start 2P', monospace";
+    ctx.textAlign = "center";
+    ctx.fillText(
+      pos.name,
+      pos.x * TILE_SIZE + TILE_SIZE / 2,
+      pos.y * TILE_SIZE + TILE_SIZE + 10
     );
-  };
-
-  // Draw name tag
-  ctx.fillStyle = "white";
-  ctx.font = "10px 'Press Start 2P', monospace";
-  ctx.textAlign = "center";
-  ctx.fillText(
-    pos.name,
-    pos.x * TILE_SIZE + TILE_SIZE / 2,
-    pos.y * TILE_SIZE + TILE_SIZE + 10
-  );
-});
-
+  });
 }
-
 window.addEventListener("keydown", (e) => {
   // hides instructions
   hideWASDInstructionsAfterDelay();
