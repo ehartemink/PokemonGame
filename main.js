@@ -4,12 +4,14 @@ const ctx = canvas.getContext("2d");
 const TILE_SIZE = 25;
 let grid = null;
 let player = { x: 0, y: 0 };
+let players = {};
 
 const socket = io("http://localhost:8000");
 
 socket.on("state", (data) => {
   grid = data.grid;
   player = data.player;
+  players = data.players;
 
   const rows = grid.length;
   const cols = grid[0].length;
@@ -20,8 +22,8 @@ socket.on("state", (data) => {
   draw();
 });
 
-socket.on("player_update", (data) => {
-  player = data.player;
+socket.on("players_update", (data) => {
+  players = data;
   draw();
 });
 
@@ -41,16 +43,19 @@ function draw() {
     }
   }
 
-  ctx.fillStyle = "#ffffff";
-  ctx.beginPath();
-  ctx.arc(
-    player.x * TILE_SIZE + TILE_SIZE / 2,
-    player.y * TILE_SIZE + TILE_SIZE / 2,
-    TILE_SIZE / 2.5,
-    0,
-    Math.PI * 2
-  );
-  ctx.fill();
+  // Draw all players
+  Object.entries(players).forEach(([sid, pos]) => {
+    ctx.fillStyle = sid === socket.id ? "#ffffff" : "#ff4444"; // You = white, others = red
+    ctx.beginPath();
+    ctx.arc(
+      pos.x * TILE_SIZE + TILE_SIZE / 2,
+      pos.y * TILE_SIZE + TILE_SIZE / 2,
+      TILE_SIZE / 2.5,
+      0,
+      Math.PI * 2
+    );
+    ctx.fill();
+  });
 }
 
 window.addEventListener("keydown", (e) => {
