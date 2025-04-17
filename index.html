@@ -3,9 +3,42 @@
 <head>
   <meta charset="UTF-8" />
   <title>Grid World</title>
+  <!-- ✅ Add CSS styles -->
   <style>
     body { margin: 0; background: #111; }
     canvas { display: block; margin: auto; background: #000; }
+  </style>
+  <style>
+    body {
+      margin: 0;
+      background: #111;
+    }
+
+    canvas {
+      display: block;
+      margin: auto;
+      background: #000;
+    }
+
+
+    #instructions {
+      position: fixed;
+      top: 10px;
+      width: 100%;
+      text-align: center;
+      color: white;
+      font-family: 'Press Start 2P', monospace;
+      font-size: 0.75rem;
+      z-index: 1000;
+      pointer-events: none;
+      text-shadow: 1px 1px #000;
+      opacity: 1;
+      transition: opacity 1s ease;
+    }
+
+    #instructions.hidden {
+      opacity: 0;
+    }
   </style>
 </head>
 <body>
@@ -16,5 +49,13 @@
 
   <!-- Your separated game logic -->
   <script src="main.js"></script>
+  <audio id="bgMusic" autoplay loop hidden>
+    <source src="assets/music/main-theme.ogg" type="audio/ogg" />
+    Your browser does not support the audio element.
+  </audio>
+  <div id="instructions">
+    <p>Use <strong>W A S D</strong> or <strong>Arrow Keys</strong> to move.</p>
+  </div>
+
 </body>
 </html>

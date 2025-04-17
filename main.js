@@ -55,10 +55,26 @@ function draw() {
       Math.PI * 2
     );
     ctx.fill();
+    
+      // Draw the name tag
+      const name = "william"; // TODO: replace with actual name later
+      ctx.fillStyle = "white";
+      ctx.font = "10px 'Press Start 2P', monospace";
+      ctx.textAlign = "center";
+      ctx.fillText(
+        name,
+        pos.x * TILE_SIZE + TILE_SIZE / 2,
+        pos.y * TILE_SIZE + TILE_SIZE + 10 // below the player; change to -4 for above
+      );
   });
+
 }
 
 window.addEventListener("keydown", (e) => {
+  // hides instructions
+  hideWASDInstructionsAfterDelay();
+
+
   const key = e.key.toLowerCase();
   let direction = null;
 
@@ -70,4 +86,28 @@ window.addEventListener("keydown", (e) => {
   if (direction) {
     socket.emit("move", { direction });
   }
+
+
+  // plays music starting when you hit a key
+  const music = document.getElementById("bgMusic");
+  if (music && music.paused) {
+    music.play().catch(e => console.log("🎵 Autoplay blocked:", e));
+  }
 });
+
+window.addEventListener("click", () => {
+});
+
+let instructionsHidden = false;
+
+function hideWASDInstructionsAfterDelay() {
+  if (instructionsHidden) return;
+
+  instructionsHidden = true;
+  setTimeout(() => {
+    const instructions = document.getElementById("instructions");
+    if (instructions) {
+      instructions.classList.add("hidden");
+    }
+  }, 1000); // 1 seconds
+}
