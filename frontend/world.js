@@ -55,7 +55,7 @@ function draw() {
       Math.PI * 2
     );
     ctx.fill();
-    
+
       // Draw the name tag
       const name = "william"; // TODO: replace with actual name later
       ctx.fillStyle = "white";
