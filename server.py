@@ -2,8 +2,15 @@ import asyncio
 import random
 import socketio
 
+from fastapi import FastAPI
+from fastapi.responses import JSONResponse
+import os
+
+# Assuming this is already in your file:
 sio = socketio.AsyncServer(async_mode='asgi', cors_allowed_origins='*')
-app = socketio.ASGIApp(sio)
+app = FastAPI()
+app.mount("/", socketio.ASGIApp(sio, app))
+
 
 GRID_SIZE = 30
 grid = []
@@ -19,26 +26,36 @@ def generate_grid():
 grid = generate_grid()
 
 @sio.event
-async def connect(sid, environ):
-    print(f"✅ Client connected: {sid}")
+async def connect(sid, environ, auth):
+    name = auth.get("name", "William")
+    sprite = auth.get("sprite", "male_1.png")
 
-    # Find a random land tile to spawn player
+    # Find land tile
     while True:
         x = random.randint(0, GRID_SIZE - 1)
         y = random.randint(0, GRID_SIZE - 1)
         if grid[y][x] == "L":
             break
 
-    players[sid] = {"x": x, "y": y}
+    # Store player state
+    players[sid] = {
+        "x": x,
+        "y": y,
+        "name": name,
+        "sprite": sprite
+    }
 
-    # Send initial state only to this client
+    await sio.save_session(sid, {
+        "name": name,
+        "sprite": sprite
+    })
+
     await sio.emit("state", {
         "grid": grid,
         "player": players[sid],
         "players": players
     }, to=sid)
 
-    # Notify everyone about the updated players
     await sio.emit("players_update", players)
 
 @sio.event
@@ -67,3 +84,15 @@ def disconnect(sid):
     print(f"👋 Client disconnected: {sid}")
     players.pop(sid, None)
     asyncio.create_task(sio.emit("players_update", players))
+
+
+# Menu options are here
+
+@app.get("/api/player-sprites")
+async def get_player_sprites():
+    sprite_folder = os.path.join("frontend", "assets", "player")
+    sprites = [
+        f[:-4] for f in os.listdir(sprite_folder)
+        if f.endswith(".png")
+    ]
+    return JSONResponse(content={"sprites": sprites})

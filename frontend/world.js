@@ -6,7 +6,12 @@ let grid = null;
 let player = { x: 0, y: 0 };
 let players = {};
 
-const socket = io("http://localhost:8000");
+const socket = io("http://localhost:8000", {
+  auth: {
+    name: localStorage.getItem("playerName"),
+    sprite: localStorage.getItem("playerSprite")
+  }
+});
 
 socket.on("state", (data) => {
   grid = data.grid;
@@ -44,29 +49,34 @@ function draw() {
   }
 
   // Draw all players
-  Object.entries(players).forEach(([sid, pos]) => {
-    ctx.fillStyle = sid === socket.id ? "#ffffff" : "#ff4444"; // You = white, others = red
-    ctx.beginPath();
-    ctx.arc(
-      pos.x * TILE_SIZE + TILE_SIZE / 2,
-      pos.y * TILE_SIZE + TILE_SIZE / 2,
-      TILE_SIZE / 2.5,
-      0,
-      Math.PI * 2
-    );
-    ctx.fill();
+Object.entries(players).forEach(([sid, pos]) => {
+  const isYou = sid === socket.id;
 
-      // Draw the name tag
-      const name = "william"; // TODO: replace with actual name later
-      ctx.fillStyle = "white";
-      ctx.font = "10px 'Press Start 2P', monospace";
-      ctx.textAlign = "center";
-      ctx.fillText(
-        name,
-        pos.x * TILE_SIZE + TILE_SIZE / 2,
-        pos.y * TILE_SIZE + TILE_SIZE + 10 // below the player; change to -4 for above
-      );
-  });
+  // Load sprite image
+  const img = new Image();
+  img.src = `assets/player/${pos.sprite}`;
+
+  // When loaded, draw sprite (async-safe approach)
+  img.onload = () => {
+    ctx.drawImage(
+      img,
+      pos.x * TILE_SIZE,
+      pos.y * TILE_SIZE,
+      TILE_SIZE,
+      TILE_SIZE
+    );
+  };
+
+  // Draw name tag
+  ctx.fillStyle = "white";
+  ctx.font = "10px 'Press Start 2P', monospace";
+  ctx.textAlign = "center";
+  ctx.fillText(
+    pos.name,
+    pos.x * TILE_SIZE + TILE_SIZE / 2,
+    pos.y * TILE_SIZE + TILE_SIZE + 10
+  );
+});
 
 }
 

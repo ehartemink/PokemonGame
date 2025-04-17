@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Enter Grid World</title>
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+  <style>
+    body {
+      background: #000;
+      color: #fff;
+      font-family: 'Press Start 2P', monospace;
+      text-align: center;
+      padding-top: 50px;
+    }
+    input, button {
+      font-family: inherit;
+      font-size: 1rem;
+      padding: 10px;
+      margin: 10px;
+    }
+    .characters {
+      display: flex;
+      justify-content: center;
+      gap: 30px;
+      margin-top: 20px;
+    }
+    .char-option {
+      border: 3px solid transparent;
+      padding: 10px;
+      cursor: pointer;
+    }
+    .char-option.selected {
+      border-color: yellow;
+    }
+    img {
+      width: 64px;
+      height: 64px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Enter Grid World</h1>
+  <input id="nameInput" type="text" placeholder="Enter your name" maxlength="12" />
+  <div class="characters" id="characterSelect">
+    <div class="char-option" data-character="male_1.png">
+      <img src="assets/player/male_1.png" />
+      <p>Ash</p>
+    </div>
+    <div class="char-option" data-character="female_1.png">
+      <img src="assets/player/female_1.png" />
+      <p>Misty</p>
+    </div>
+    <div class="char-option" data-character="female_2.png">
+      <img src="assets/player/female_2.png" />
+      <p>May</p>
+    </div>
+  </div>
+  <br>
+  <button onclick="enterWorld()">Enter World</button>
+
+  <script src="index.js"></script>
+</body>
+</html>
