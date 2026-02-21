@@ -4,11 +4,6 @@
   <meta charset="UTF-8" />
   <link rel="icon" type="image/svg+xml" href="assets/favicon.svg" />
   <title>Pokémon Lite</title>
-  <!-- ✅ Add CSS styles -->
-  <style>
-    body { margin: 0; background: #111; }
-    canvas { display: block; margin: auto; background: #000; }
-  </style>
   <style>
     body {
       margin: 0;
@@ -20,7 +15,6 @@
       margin: auto;
       background: #000;
     }
-
 
     #instructions {
       position: fixed;
@@ -40,19 +34,79 @@
     #instructions.hidden {
       opacity: 0;
     }
+
+    #starterOverlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.88);
+      z-index: 2000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'Press Start 2P', monospace;
+      color: white;
+    }
+
+    #starterOverlay.hidden {
+      display: none;
+    }
+
+    .starter-card {
+      width: min(900px, 90vw);
+      border: 3px solid #ffe066;
+      background: #1a1a1a;
+      padding: 20px;
+      text-align: center;
+    }
+
+    #starterChoices {
+      display: flex;
+      gap: 15px;
+      justify-content: center;
+      margin-top: 20px;
+      flex-wrap: wrap;
+    }
+
+    .starter-option {
+      background: #2b2b2b;
+      color: white;
+      border: 2px solid #888;
+      padding: 12px;
+      min-width: 220px;
+      cursor: pointer;
+      font-family: inherit;
+    }
+
+    .starter-option:hover {
+      border-color: #ffe066;
+      transform: translateY(-2px);
+    }
+
+    #starterStatus {
+      font-size: 0.7rem;
+      margin-top: 8px;
+      line-height: 1.4;
+    }
   </style>
 </head>
 <body>
   <canvas id="gameCanvas"></canvas>
 
-  <!-- Socket.IO -->
-  <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+  <div id="starterOverlay" class="hidden">
+    <div class="starter-card">
+      <h2>Choose Your Starter</h2>
+      <p id="starterStatus"></p>
+      <div id="starterChoices"></div>
+    </div>
+  </div>
 
-  <!-- Your separated game logic -->
+  <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
   <script src="world.js"></script>
+
   <audio id="bgMusic" autoplay loop hidden>
     <source src="assets/music/main-theme.ogg" type="audio/ogg" />
   </audio>
+
   <div id="instructions">
     <p>Use <strong>W A S D</strong> or <strong>Arrow Keys</strong> to move.</p>
   </div>

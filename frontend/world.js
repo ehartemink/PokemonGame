@@ -5,11 +5,18 @@ const TILE_SIZE = 25;
 let grid = null;
 let player = { x: 0, y: 0 };
 let players = {};
+let starterOptions = {};
+let starterSelectionActive = false;
+
+const savedProgress = JSON.parse(localStorage.getItem("playerProgress") || "{}");
+const savedParty = JSON.parse(localStorage.getItem("playerParty") || "[]");
 
 const socket = io("http://localhost:8000", {
   auth: {
     name: localStorage.getItem("playerName"),
-    sprite: localStorage.getItem("playerSprite")
+    sprite: localStorage.getItem("playerSprite"),
+    progress: savedProgress,
+    party: savedParty
   }
 });
 
@@ -17,6 +24,12 @@ socket.on("state", (data) => {
   grid = data.grid;
   player = data.player;
   players = data.players;
+  starterOptions = data.starter_options || {};
+
+  if (player?.progress?.starter_chosen) {
+    localStorage.setItem("playerProgress", JSON.stringify(player.progress));
+    localStorage.setItem("playerParty", JSON.stringify(player.party || []));
+  }
 
   const rows = grid.length;
   const cols = grid[0].length;
@@ -29,7 +42,28 @@ socket.on("state", (data) => {
 
 socket.on("players_update", (data) => {
   players = data;
+  player = players[socket.id] || player;
   draw();
+});
+
+socket.on("starter_selection_required", (data) => {
+  starterOptions = data.options || starterOptions;
+  showStarterModal(data.message || "Choose your starter Pokémon.");
+});
+
+socket.on("starter_selection_error", (data) => {
+  const statusEl = document.getElementById("starterStatus");
+  statusEl.textContent = data.message;
+});
+
+socket.on("starter_selected", (data) => {
+  const progress = data.progress || {};
+  const party = data.party || [];
+
+  localStorage.setItem("playerProgress", JSON.stringify(progress));
+  localStorage.setItem("playerParty", JSON.stringify(party));
+
+  hideStarterModal();
 });
 
 const spriteCache = {};
@@ -42,18 +76,22 @@ function draw() {
 
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-  // Draw tiles
   for (let y = 0; y < rows; y++) {
     for (let x = 0; x < cols; x++) {
       const tile = grid[y][x];
-      ctx.fillStyle = tile === "L" ? "#228B22" : "#1E90FF";
+
+      if (tile === "L") ctx.fillStyle = "#228B22";
+      else if (tile === "W") ctx.fillStyle = "#1E90FF";
+      else if (tile === "T") ctx.fillStyle = "#0f5a1f";
+      else if (tile === "P") ctx.fillStyle = "#e8d9a8";
+      else if (tile === "S") ctx.fillStyle = "#ffe066";
+      else ctx.fillStyle = "#333";
+
       ctx.fillRect(x * TILE_SIZE, y * TILE_SIZE, TILE_SIZE, TILE_SIZE);
     }
   }
 
-  // Draw all players
   Object.entries(players).forEach(([sid, pos]) => {
-    const isYou = sid === socket.id;
     const spriteSrc = `assets/player/${pos.sprite}`;
 
     if (!spriteCache[spriteSrc]) {
@@ -74,7 +112,6 @@ function draw() {
       );
     }
 
-    // Draw name tag
     ctx.fillStyle = "white";
     ctx.font = "10px 'Press Start 2P', monospace";
     ctx.textAlign = "center";
@@ -85,10 +122,14 @@ function draw() {
     );
   });
 }
+
 window.addEventListener("keydown", (e) => {
-  // hides instructions
   hideWASDInstructionsAfterDelay();
 
+  if (starterSelectionActive) {
+    e.preventDefault();
+    return;
+  }
 
   const key = e.key.toLowerCase();
   let direction = null;
@@ -102,15 +143,10 @@ window.addEventListener("keydown", (e) => {
     socket.emit("move", { direction });
   }
 
-
-  // plays music starting when you hit a key
   const music = document.getElementById("bgMusic");
   if (music && music.paused) {
-    music.play().catch(e => console.log("🎵 Autoplay blocked:", e));
+    music.play().catch((err) => console.log("🎵 Autoplay blocked:", err));
   }
-});
-
-window.addEventListener("click", () => {
 });
 
 let instructionsHidden = false;
@@ -124,5 +160,37 @@ function hideWASDInstructionsAfterDelay() {
     if (instructions) {
       instructions.classList.add("hidden");
     }
-  }, 1000); // 1 seconds
+  }, 1000);
+}
+
+function showStarterModal(message) {
+  const overlay = document.getElementById("starterOverlay");
+  const list = document.getElementById("starterChoices");
+  const statusEl = document.getElementById("starterStatus");
+
+  starterSelectionActive = true;
+  statusEl.textContent = message;
+  list.innerHTML = "";
+
+  Object.entries(starterOptions).forEach(([key, starter]) => {
+    const button = document.createElement("button");
+    button.className = "starter-option";
+    button.innerHTML = `
+      <h3>${starter.species}</h3>
+      <p>Lv ${starter.level}</p>
+      <small>${starter.moves.join(" • ")}</small>
+    `;
+    button.addEventListener("click", () => {
+      socket.emit("choose_starter", { starter: key });
+    });
+    list.appendChild(button);
+  });
+
+  overlay.classList.remove("hidden");
+}
+
+function hideStarterModal() {
+  starterSelectionActive = false;
+  const overlay = document.getElementById("starterOverlay");
+  overlay.classList.add("hidden");
 }
