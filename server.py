@@ -6,6 +6,16 @@ from fastapi import FastAPI
 from fastapi.responses import JSONResponse
 import os
 
+from game_constants import (
+    DOWN,
+    LAND,
+    LEFT,
+    MOVEMENT_COMMANDS,
+    RIGHT,
+    UP,
+    WATER,
+)
+
 # Assuming this is already in your file:
 sio = socketio.AsyncServer(async_mode='asgi', cors_allowed_origins='*')
 app = FastAPI()
@@ -18,7 +28,7 @@ players = {}
 
 def generate_grid():
     return [
-        [random.choices(["L", "W"], weights=[0.8, 0.2])[0] for _ in range(GRID_SIZE)]
+        [random.choices([LAND, WATER], weights=[0.8, 0.2])[0] for _ in range(GRID_SIZE)]
         for _ in range(GRID_SIZE)
     ]
 
@@ -34,7 +44,7 @@ async def connect(sid, environ, auth):
     while True:
         x = random.randint(0, GRID_SIZE - 1)
         y = random.randint(0, GRID_SIZE - 1)
-        if grid[y][x] == "L":
+        if grid[y][x] == LAND:
             break
 
     # Store player state
@@ -67,15 +77,22 @@ async def move(sid, data):
         return
 
     dx, dy = 0, 0
-    if direction == "up": dy = -1
-    elif direction == "down": dy = 1
-    elif direction == "left": dx = -1
-    elif direction == "right": dx = 1
+    if direction not in MOVEMENT_COMMANDS:
+        return
+
+    if direction == UP:
+        dy = -1
+    elif direction == DOWN:
+        dy = 1
+    elif direction == LEFT:
+        dx = -1
+    elif direction == RIGHT:
+        dx = 1
 
     new_x = max(0, min(GRID_SIZE - 1, pos["x"] + dx))
     new_y = max(0, min(GRID_SIZE - 1, pos["y"] + dy))
 
-    if grid[new_y][new_x] == "L":
+    if grid[new_y][new_x] == LAND:
         pos["x"], pos["y"] = new_x, new_y
         await sio.emit("players_update", players)
 
