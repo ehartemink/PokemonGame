@@ -34,6 +34,23 @@ socket.on("players_update", (data) => {
 
 const spriteCache = {};
 
+function drawDirectionalSprite(img, x, y, width, height, direction = "down") {
+  const angleByDirection = {
+    right: Math.PI / 2,
+    down: Math.PI,
+    left: -Math.PI / 2,
+    up: 0
+  };
+
+  const angle = angleByDirection[direction] ?? Math.PI;
+
+  ctx.save();
+  ctx.translate(x + width / 2, y + height / 2);
+  ctx.rotate(angle);
+  ctx.drawImage(img, -width / 2, -height / 2, width, height);
+  ctx.restore();
+}
+
 function draw() {
   if (!grid) return;
 
@@ -53,7 +70,6 @@ function draw() {
 
   // Draw all players
   Object.entries(players).forEach(([sid, pos]) => {
-    const isYou = sid === socket.id;
     const spriteSrc = `assets/player/${pos.sprite}`;
 
     if (!spriteCache[spriteSrc]) {
@@ -65,13 +81,7 @@ function draw() {
     const img = spriteCache[spriteSrc];
 
     if (img.complete) {
-      ctx.drawImage(
-        img,
-        pos.x * TILE_SIZE,
-        pos.y * TILE_SIZE,
-        TILE_SIZE,
-        TILE_SIZE
-      );
+      drawDirectionalSprite(img, pos.x * TILE_SIZE, pos.y * TILE_SIZE, TILE_SIZE, TILE_SIZE, pos.direction);
     }
 
     // Draw name tag
