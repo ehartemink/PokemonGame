@@ -1,1 +1,1 @@
-python -m http.server 5500
+python3 -m http.server 5500
