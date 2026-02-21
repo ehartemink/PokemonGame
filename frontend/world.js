@@ -1,3 +1,5 @@
+import { MOVEMENT_COMMANDS, TILE_IDS } from "./constants.js";
+
 const canvas = document.getElementById("gameCanvas");
 const ctx = canvas.getContext("2d");
 
@@ -33,6 +35,16 @@ socket.on("players_update", (data) => {
 });
 
 const spriteCache = {};
+const KEY_TO_DIRECTION = Object.freeze({
+  w: MOVEMENT_COMMANDS.UP,
+  arrowup: MOVEMENT_COMMANDS.UP,
+  s: MOVEMENT_COMMANDS.DOWN,
+  arrowdown: MOVEMENT_COMMANDS.DOWN,
+  a: MOVEMENT_COMMANDS.LEFT,
+  arrowleft: MOVEMENT_COMMANDS.LEFT,
+  d: MOVEMENT_COMMANDS.RIGHT,
+  arrowright: MOVEMENT_COMMANDS.RIGHT
+});
 
 function draw() {
   if (!grid) return;
@@ -46,14 +58,13 @@ function draw() {
   for (let y = 0; y < rows; y++) {
     for (let x = 0; x < cols; x++) {
       const tile = grid[y][x];
-      ctx.fillStyle = tile === "L" ? "#228B22" : "#1E90FF";
+      ctx.fillStyle = tile === TILE_IDS.LAND ? "#228B22" : "#1E90FF";
       ctx.fillRect(x * TILE_SIZE, y * TILE_SIZE, TILE_SIZE, TILE_SIZE);
     }
   }
 
   // Draw all players
   Object.entries(players).forEach(([sid, pos]) => {
-    const isYou = sid === socket.id;
     const spriteSrc = `assets/player/${pos.sprite}`;
 
     if (!spriteCache[spriteSrc]) {
@@ -65,53 +76,36 @@ function draw() {
     const img = spriteCache[spriteSrc];
 
     if (img.complete) {
-      ctx.drawImage(
-        img,
-        pos.x * TILE_SIZE,
-        pos.y * TILE_SIZE,
-        TILE_SIZE,
-        TILE_SIZE
-      );
+      ctx.drawImage(img, pos.x * TILE_SIZE, pos.y * TILE_SIZE, TILE_SIZE, TILE_SIZE);
     }
 
     // Draw name tag
     ctx.fillStyle = "white";
     ctx.font = "10px 'Press Start 2P', monospace";
     ctx.textAlign = "center";
-    ctx.fillText(
-      pos.name,
-      pos.x * TILE_SIZE + TILE_SIZE / 2,
-      pos.y * TILE_SIZE + TILE_SIZE + 10
-    );
+    ctx.fillText(pos.name, pos.x * TILE_SIZE + TILE_SIZE / 2, pos.y * TILE_SIZE + TILE_SIZE + 10);
   });
 }
+
 window.addEventListener("keydown", (e) => {
   // hides instructions
   hideWASDInstructionsAfterDelay();
 
-
   const key = e.key.toLowerCase();
-  let direction = null;
-
-  if (key === "w" || key === "arrowup") direction = "up";
-  else if (key === "s" || key === "arrowdown") direction = "down";
-  else if (key === "a" || key === "arrowleft") direction = "left";
-  else if (key === "d" || key === "arrowright") direction = "right";
+  const direction = KEY_TO_DIRECTION[key] ?? null;
 
   if (direction) {
     socket.emit("move", { direction });
   }
 
-
   // plays music starting when you hit a key
   const music = document.getElementById("bgMusic");
   if (music && music.paused) {
-    music.play().catch(e => console.log("🎵 Autoplay blocked:", e));
+    music.play().catch((error) => console.log("🎵 Autoplay blocked:", error));
   }
 });
 
-window.addEventListener("click", () => {
-});
+window.addEventListener("click", () => {});
 
 let instructionsHidden = false;
 
@@ -124,5 +118,5 @@ function hideWASDInstructionsAfterDelay() {
     if (instructions) {
       instructions.classList.add("hidden");
     }
-  }, 1000); // 1 seconds
+  }, 1000); // 1 second
 }
