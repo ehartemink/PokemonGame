@@ -6,6 +6,9 @@ from fastapi import FastAPI
 from fastapi.responses import JSONResponse
 import os
 
+from pokemon_data import PokemonDataLoader
+from pokemon_sprites import PokemonSpriteMapper
+
 # Assuming this is already in your file:
 sio = socketio.AsyncServer(async_mode='asgi', cors_allowed_origins='*')
 app = FastAPI()
@@ -15,6 +18,11 @@ app.mount("/", socketio.ASGIApp(sio, app))
 GRID_SIZE = 30
 grid = []
 players = {}
+pokemon_loader = PokemonDataLoader("./data/pokemon.csv")
+pokemon_species = pokemon_loader.load_species()
+sprite_mapper = PokemonSpriteMapper("./data/pokemon_graphics_lib")
+sprite_mapper.index()
+
 
 def generate_grid():
     return [
@@ -22,8 +30,10 @@ def generate_grid():
         for _ in range(GRID_SIZE)
     ]
 
+
 # Create global grid on startup
 grid = generate_grid()
+
 
 @sio.event
 async def connect(sid, environ, auth):
@@ -42,7 +52,8 @@ async def connect(sid, environ, auth):
         "x": x,
         "y": y,
         "name": name,
-        "sprite": sprite
+        "sprite": sprite,
+        "direction": "down",
     }
 
     await sio.save_session(sid, {
@@ -58,6 +69,7 @@ async def connect(sid, environ, auth):
 
     await sio.emit("players_update", players)
 
+
 @sio.event
 async def move(sid, data):
     direction = data.get("direction")
@@ -67,17 +79,25 @@ async def move(sid, data):
         return
 
     dx, dy = 0, 0
-    if direction == "up": dy = -1
-    elif direction == "down": dy = 1
-    elif direction == "left": dx = -1
-    elif direction == "right": dx = 1
+    if direction == "up":
+        dy = -1
+    elif direction == "down":
+        dy = 1
+    elif direction == "left":
+        dx = -1
+    elif direction == "right":
+        dx = 1
 
     new_x = max(0, min(GRID_SIZE - 1, pos["x"] + dx))
     new_y = max(0, min(GRID_SIZE - 1, pos["y"] + dy))
 
+    pos["direction"] = direction if direction in {"up", "down", "left", "right"} else "down"
+
     if grid[new_y][new_x] == "L":
         pos["x"], pos["y"] = new_x, new_y
-        await sio.emit("players_update", players)
+
+    await sio.emit("players_update", players)
+
 
 @sio.event
 def disconnect(sid):
@@ -96,3 +116,22 @@ async def get_player_sprites():
         if f.endswith(".png")
     ]
     return JSONResponse(content={"sprites": sprites})
+
+
+@app.get("/api/pokemon-species")
+async def get_pokemon_species():
+    return JSONResponse(content={
+        "species": [
+            {
+                "id": species.id,
+                "key": species.key,
+                "name": species.name,
+                "types": species.types,
+                "base_stats": species.base_stats,
+                "growth_rate": species.growth_rate,
+                "exp_yield": species.exp_yield,
+                "sprite": sprite_mapper.resolve(name=species.name, species_id=species.id),
+            }
+            for species in pokemon_species.values()
+        ]
+    })
